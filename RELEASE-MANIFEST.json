@@ -1,0 +1,11 @@
+{
+  "module": "trace",
+  "source_commit": "71c93f0178003eb557290a63519bc8507538eb5b",
+  "source_files": [
+    "src/trace.c",
+    "include/fbs/trace.h",
+    "tests/test_trace.c",
+    "tests/fixtures/trace/sweeps.json"
+  ],
+  "history": "fresh initial commit, later squashed snapshots"
+}
