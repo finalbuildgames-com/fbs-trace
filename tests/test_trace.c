@@ -2,7 +2,7 @@
  * tests/test_trace.c — tests for fbs/trace.h 0.1.0, no framework.
  *
  * Exit code is the number of failed checks; the run prints "N checks passed".
- * One function per numbered item of docs/lanes/trace-impl-brief.md. Every
+ * One function per numbered section below. Every
  * expected number is derived analytically in the comment above its test.
  *
  * Fixture mode:
@@ -152,7 +152,7 @@ static fbs_vec3 lerp3(fbs_vec3 p0, fbs_vec3 p1, double t) {
  * MISSES it entirely. steps_used = steps + 1 = 52.
  * (2.02 is used instead of a round 2.00 on purpose: 2.00/0.04 is an exact
  * integer, and float(0.04) = 0.0399999991 makes ceil() land one step higher
- * than the double 0.04 of the TypeScript original. See docs/lanes/trace-impl.md.)
+ * than the double 0.04 a JavaScript host uses.)
  *
  * ADVANCE, tolerance 1e-4: L = 2.02. Iteration 0 at t = 0: dist = 1.01,
  * sep = 1.01 - 0.019 = 0.991, t <- 0.991/2.02 = 0.4905940594. Iteration 1:
@@ -1453,10 +1453,10 @@ static void test_capacity_and_allocator(tally *t) {
 }
 
 /* ------------------------------------------------------------------------- */
-/* 14. Fixtures: deterministic cases replayed by the native and WASM tests   */
+/* 14. Fixtures: deterministic cases replayed by native and port tests       */
 /* ------------------------------------------------------------------------- */
 
-/* File format (also consumed by integrations/wasm/tests/trace.test.mjs):
+/* File format (language neutral, so other ports can replay the same file):
  *   {"version":100,"cases":[{"name","kind":"sphere"|"capsule",
  *     "w0":[7],"w1":[7],"t0":[7],"t1":[7]|null,
  *     "policy":[mode,spacing,tolerance,max_steps],

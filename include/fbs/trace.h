@@ -17,8 +17,8 @@
  *     their own sweeps. The library never allocates after fbs_trace_create.
  *
  * Units and conventions: the core is unit- and handedness-agnostic; every
- * distance is in the caller's units and every angle-free. The documented
- * adapter default (integrations/wasm, Frozen Heart) is meters, radians, Y-up.
+ * distance is in the caller's units and every angle-free. The suggested
+ * host default is meters, radians, Y-up.
  * Inputs are validated: any non-finite coordinate, negative radius or invalid
  * pointer yields FBS_TRACE_E_INVALID and leaves every output untouched.
  *
@@ -101,8 +101,8 @@ typedef enum fbs_trace_mode {
    * i = 0..steps inclusive, where travel is the largest endpoint displacement
    * of the weapon plus the largest endpoint displacement of the target. The
    * first sample whose distance is within the combined radius is the contact.
-   * spacing = 0.04 follows Frozen Heart's sweptPipeContact sampling rule;
-   * float spacing can add a sample compared with JavaScript double 0.04. */
+   * spacing = 0.04 matches the 4 cm sampling rule some hosts use; float
+   * spacing can add a sample compared with a JavaScript double 0.04. */
   FBS_TRACE_MODE_SAMPLED = 0,
   /* Conservative advancement for linearly moving endpoints and fixed radii:
    * advance by computed separation / (weapon travel + target travel), and
@@ -120,8 +120,8 @@ typedef struct fbs_trace_policy {
   unsigned max_steps;  /* resource cap: SAMPLED sample count, ADVANCE iterations (>= 2) */
 } fbs_trace_policy;
 
-/* Frozen Heart compatibility preset: SAMPLED, spacing 0.04 (4 cm in meters),
- * max_steps 1024. */
+/* 4 cm compatibility preset for hosts that sample every 4 cm: SAMPLED,
+ * spacing 0.04 (4 cm in meters), max_steps 1024. */
 fbs_trace_policy fbs_trace_policy_compat_4cm(void);
 /* Default error-based preset: ADVANCE, tolerance 1e-4, max_steps 64. */
 fbs_trace_policy fbs_trace_policy_default(void);

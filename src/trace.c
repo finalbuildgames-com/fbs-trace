@@ -11,11 +11,11 @@
  * (both IEEE-754 double, both compiled with -ffp-contract=off) agree bit for
  * bit. Segment/segment closest points follow Ericson, Real-Time Collision
  * Detection, 5.1.9 (ClosestPtSegmentSegment) with an epsilon of 1e-12 on the
- * squared lengths and on the denominator, which is also the form Frozen
- * Heart's meleeGeometry.ts uses, so FBS_TRACE_MODE_SAMPLED with spacing 0.04
- * reproduces sweptPipeCapsuleContact sample for sample.
+ * squared lengths and on the denominator, which is also the form a TypeScript
+ * host game uses, so FBS_TRACE_MODE_SAMPLED with spacing 0.04 reproduces that
+ * host's sampled capsule contact sample for sample.
  *
- * Two deliberate readings of the contract, recorded in docs/lanes/trace-impl.md:
+ * Two deliberate readings of the contract:
  *   - contact.distance is the closest-point distance between the weapon-axis
  *     point and the target core point. It is never negative; it is smaller
  *     than the combined radius when the weapon penetrates.
@@ -67,7 +67,7 @@ static fbs_dvec3 dv_scale(fbs_dvec3 a, double s) { return dv(a.x * s, a.y * s, a
 static double dv_dot(fbs_dvec3 a, fbs_dvec3 b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
 static double dv_len(fbs_dvec3 a) { return sqrt(dv_dot(a, a)); }
 
-/* PlayCanvas lerp: a + t (b - a), the exact form Frozen Heart samples with. */
+/* Lerp as a + t (b - a), the exact form the 4 cm hosts sample with. */
 static fbs_dvec3 dv_lerp(fbs_dvec3 a, fbs_dvec3 b, double t) {
   return dv_add(a, dv_scale(dv_sub(b, a), t));
 }
