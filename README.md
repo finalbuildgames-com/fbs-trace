@@ -4,7 +4,7 @@ Swept melee weapon traces against moving spheres and capsules, with per-attack d
 
 ## What it does
 
-A fast sword swing can pass through a thin target between two frames. This library tests the whole motion of the weapon from its previous pose to its current pose, so the hit is found at the time it happened inside the frame.
+A fast sword swing can pass through a thin target between two frames. This library tests the whole motion of the weapon from its previous pose to its current pose, and reports an estimated contact time inside the frame under the selected sweep policy.
 
 - The weapon is a segment from `a` (hilt) to `b` (tip) with an optional radius. `a == b` is a point weapon such as a fist.
 - `fbs_trace_sweep_sphere` and `fbs_trace_sweep_capsule` sweep a weapon against one sphere or capsule that may also move. On contact they return `FBS_TRACE_CONTACT` and fill an `fbs_trace_contact`: the normalized contact time in the interval, the contact point on the weapon, the closest point on the target, a normal, and the motion of the struck weapon point (absolute and relative to the target). `fbs_trace_closest` does the same test for a single static pose.
@@ -29,6 +29,7 @@ A fast sword swing can pass through a thin target between two frames. This libra
 - The combined radius comes from the start of each interval and is not interpolated across it.
 - The sampled policy can step over targets thinner than its spacing. `test_thin_target_fast_sweep` shows the 4 cm preset missing a sphere of radius 0.019 that the default policy hits.
 - The default policy reports contact once the gap is within its tolerance, so the contact can come slightly before the surfaces touch.
+- `FBS_TRACE_E_CAPACITY` means a sweep needs more samples/iterations than `policy.max_steps` allows (or a context has no free weapon slot). Handle that outcome explicitly; it is not a no-contact result.
 - It finds contacts only. Choosing which hit deals damage is up to your game code.
 
 ## Example
@@ -83,10 +84,14 @@ Build it as any executable that links `fbs::trace` (for example `add_executable(
 
 ## Build and test
 
+Run from this repository's root. In addition to CMake and the compiler named
+below, install the build tool selected by your generator (for example Make or
+Ninja).
+
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
-cmake --build build --parallel 2
-ctest --test-dir build --output-on-failure --no-tests=error
+cmake --build build --parallel 1
+(cd build && ctest --output-on-failure)
 ```
 
 This runs two tests. `trace` runs `tests/test_trace.c`: hand-derived sweep cases (thin targets, tip and middle contact, a rotating blade, point weapons, moving targets, parallel and collinear axes), frame-rate schedules, the session lifecycle, dual weapons, hit ordering and truncation, all four duplicate policies, malformed input (every rejected call must leave its output untouched), capacity and allocator failures, and a replay of the 34 recorded cases in `tests/fixtures/trace/sweeps.json`, where the status must match exactly and every contact value within 1e-6. It also prints sweep timings, which are not checked. `trace_example` runs `examples/basic.c` (`fbs_trace_example`), which creates and destroys a context and prints the API version.
@@ -108,13 +113,33 @@ target_link_libraries(your_target PRIVATE fbs::trace)
 
 This repository ships the C library only. Engine bindings and adapters are not included.
 
+## Build modes and installation
+
+`BUILD_SHARED_LIBS=ON` builds a shared library; the default is static.
+`FBS_BUILD_TESTS` and `BUILD_TESTING` together enable the core test.
+`FBS_BUILD_EXAMPLES` controls `fbs_trace_example`; its CTest entry also requires
+`BUILD_TESTING`. For a library-only build, set `FBS_BUILD_TESTS=OFF` and
+`FBS_BUILD_EXAMPLES=OFF`.
+
+```sh
+cmake --install build --prefix "$PWD/install"
+```
+
+Installation supplies [the public header](include/fbs/trace.h), the library,
+license notices and `FinalBuildTraceTargets.cmake` under
+`${CMAKE_INSTALL_LIBDIR}/cmake/FinalBuildTrace`. It supplies no package config or
+version config, so `find_package(FinalBuildTrace)` is unavailable. A consumer may
+include the installed targets file explicitly and link `fbs::trace`, or use
+the source integration above. The [minimal program](examples/basic.c) and
+[core tests](tests/test_trace.c) show the implemented entry points.
+
 ## Design notes
 
 - Determinism: no globals, no static mutable state and no randomness. The API takes `float`, but all math runs in `double` and is converted once on output. The generated CMake compiles with `-ffp-contract=off` on every non-MSVC toolchain so fused multiply-add does not change results. Hits come back sorted by time with ties in input order.
 - Memory: `fbs_trace_create` makes exactly one allocation sized from the config, and `fbs_trace_destroy` frees it. `test_capacity_and_allocator` checks that a whole begin, update and test cycle allocates nothing more. Pass an `fbs_trace_allocator` (alloc, free, user pointer) to replace `malloc`/`free`. `fbs_trace_memory` reports the block size. The sweep functions do not allocate.
 - Units: distances are in your units and window times in your time unit. Nothing depends on an up axis or handedness.
 - Threading: different contexts can be used from different threads at the same time. One context must not be used from two threads at once.
-- Errors: functions return an `fbs_trace_status`. Negative values are errors, and on error nothing is written except where the header says otherwise (`FBS_TRACE_E_FULL` writes as many entries as fit; `fbs_trace_test` and `fbs_trace_substeps` set `*count`, which for invalid targets is the index of the bad one). NaN or infinite coordinates and negative radii return `FBS_TRACE_E_INVALID`. `fbs_trace_status_name` gives a printable name.
+- Errors: functions return an `fbs_trace_status`. Negative values are errors, and on error nothing is written except where the header says otherwise (`FBS_TRACE_E_FULL` and `FBS_TRACE_E_DEDUP` can write partial results; `fbs_trace_test` and `fbs_trace_substeps` set `*count`, which for invalid targets is the index of the bad one). NaN or infinite coordinates and negative radii return `FBS_TRACE_E_INVALID`. `fbs_trace_status_name` gives a printable name.
 - Versioning: the header is version 0.1.0 (`FBS_TRACE_VERSION` is 100, packed as major * 10000 + minor * 100 + patch). `fbs_trace_version()` returns the compiled value so callers can check it at runtime. Declarations are wrapped in `extern "C"` for C++.
 
 ## License
